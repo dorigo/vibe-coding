@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logo Banner 產生器</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #111;
+    --surface2: #1a1a1a;
+    --border: #222;
+    --accent: #c8f542;
+    --accent2: #42f5a7;
+    --text: #f0f0f0;
+    --muted: #555;
+    --danger: #ff4444;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 60px 24px 100px;
+  }
+
+  /* ── header ── */
+  header {
+    max-width: 760px;
+    margin: 0 auto 56px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── layout ── */
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* ── step card ── */
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .step.active { border-color: #333; }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+  .step.active .step-num {
+    background: var(--accent);
+    color: #000;
+  }
+  .step-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .step-desc {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .step-body { padding: 24px; }
+
+  /* ── number input ── */
+  .num-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .num-btn {
+    width: 40px; height: 40px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .num-btn:hover { background: #222; border-color: #444; }
+  .num-display {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 600;
+    min-width: 60px;
+    text-align: center;
+    color: var(--accent);
+  }
+  .num-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+
+  /* ── column toggle ── */
+  .col-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .col-btn {
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .col-btn:hover:not(:disabled) { border-color: #444; color: var(--text); }
+  .col-btn.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 600;
+  }
+  .col-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .col-note {
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .col-note b { color: var(--accent2); }
+
+  /* ── url inputs grid ── */
+  .url-grid {
+    display: grid;
+    gap: 10px;
+  }
+  .url-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .url-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    width: 60px;
+    flex-shrink: 0;
+  }
+  .url-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .url-input:focus { border-color: #444; }
+  .url-input::placeholder { color: var(--muted); }
+  .url-thumb {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .url-thumb img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: none;
+  }
+  .url-thumb .placeholder-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  /* ── preview ── */
+  .preview-wrap {
+    background: #000;
+    border-radius: 8px;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    min-height: 100px;
+    position: relative;
+  }
+  .preview-label {
+    position: absolute;
+    top: 10px; left: 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: #333;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── generate button ── */
+  .gen-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #000;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .gen-btn:hover { opacity: 0.9; }
+  .gen-btn:active { transform: scale(0.99); }
+
+  /* ── output ── */
+  .output-wrap {
+    position: relative;
+  }
+  .output-code {
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: #aaa;
+    white-space: pre;
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .output-code::-webkit-scrollbar { width: 6px; height: 6px; }
+  .output-code::-webkit-scrollbar-track { background: transparent; }
+  .output-code::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+  .copy-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    padding: 6px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    z-index: 2;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  /* ── divider ── */
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0;
+  }
+
+  /* ── syntax highlight classes (minimal) ── */
+  .kw { color: #c8f542; }
+  .st { color: #f5a742; }
+  .cm { color: #444; }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #222; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">// tool v1.0</div>
+  <h1>Logo Banner<br><span>產生器</span></h1>
+  <p class="subtitle">設定 Logo 數量與欄數，自動生成垂直輪播橫幅的 HTML 程式碼。</p>
+</header>
+
+<div class="container">
+
+  <!-- Step 1: Logo 數量 -->
+  <div class="step active" id="step1">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">你有幾個 Logo？</div>
+        <div class="step-desc">輸入 Logo 總數（2–24）</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="num-row">
+        <button class="num-btn" id="btnMinus">−</button>
+        <div class="num-display" id="numDisplay">8</div>
+        <button class="num-btn" id="btnPlus">+</button>
+        <span class="num-hint" id="numHint"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: 欄數 -->
+  <div class="step active" id="step2">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">一列顯示幾個？</div>
+        <div class="step-desc">只有能整除 Logo 數的欄數才可選</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="col-options" id="colOptions"></div>
+      <div class="col-note" id="colNote"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: 圖片網址 -->
+  <div class="step active" id="step3">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">輸入圖片網址</div>
+        <div class="step-desc">每個 Logo 一個網址（.png / .svg / .jpg）</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="url-grid" id="urlGrid"></div>
+    </div>
+  </div>
+
+  <!-- Step 4: 預覽 -->
+  <div class="step active" id="step4">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">預覽</div>
+        <div class="step-desc">即時顯示輪播效果</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="preview-wrap">
+        <span class="preview-label">preview</span>
+        <div id="previewBanner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate -->
+  <button class="gen-btn" id="genBtn">⬇ 產生程式碼</button>
+
+  <!-- Output -->
+  <div class="step active" id="outputStep" style="display:none;">
+    <div class="step-header">
+      <div class="step-num">✓</div>
+      <div>
+        <div class="step-title">複製程式碼</div>
+        <div class="step-desc">直接貼到你的 HTML 檔案中使用</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="output-wrap">
+        <pre class="output-code" id="outputCode"></pre>
+        <button class="copy-btn" id="copyBtn">複製</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- 預覽用的動態 style -->
+<style id="previewStyle"></style>
+
+<script>
+// ── State ──
+let logoCount = 8;
+let selectedCols = null;
+const MAX_COLS = 4;
+const MIN_COUNT = 2;
+const MAX_COUNT = 24;
+const STAY = 3;
+const MOVE = 0.6;
+const H = 60;
+
+// ── Elements ──
+const numDisplay = document.getElementById('numDisplay');
+const numHint    = document.getElementById('numHint');
+const colOptions = document.getElementById('colOptions');
+const colNote    = document.getElementById('colNote');
+const urlGrid    = document.getElementById('urlGrid');
+const previewBanner = document.getElementById('previewBanner');
+const previewStyle  = document.getElementById('previewStyle');
+const outputStep = document.getElementById('outputStep');
+const outputCode = document.getElementById('outputCode');
+const copyBtn    = document.getElementById('copyBtn');
+const genBtn     = document.getElementById('genBtn');
+
+// ── 工具函式 ──
+function getValidCols(n) {
+  return [1,2,3,4].filter(c => n % c === 0);
+}
+
+function pct(v) { return v.toFixed(3); }
+
+function generateKeyframes(rows, id) {
+  const slotPct = 100 / rows;
+  const stayPct = (STAY / (STAY + MOVE)) * slotPct;
+  let lines = [];
+  for (let i = 0; i < rows; i++) {
+    const s = pct(i * slotPct);
+    const e = pct(i * slotPct + stayPct);
+    const ty = i === 0 ? '0' : `calc(-${i} * var(--lbh))`;
+    lines.push(`    ${s}%, ${e}% { transform: translateY(${ty}); }`);
+  }
+  lines.push(`    100% { transform: translateY(calc(-${rows} * var(--lbh))); }`);
+  return `  @keyframes lb-scroll-${id} {\n${lines.join('\n')}\n  }`;
+}
+
+// ── Step 1: 數量 ──
+document.getElementById('btnMinus').onclick = () => {
+  if (logoCount > MIN_COUNT) { logoCount--; refresh(); }
+};
+document.getElementById('btnPlus').onclick = () => {
+  if (logoCount < MAX_COUNT) { logoCount++; refresh(); }
+};
+
+// ── Step 2: 欄數 ──
+function renderColOptions() {
+  const valid = getValidCols(logoCount);
+  colOptions.innerHTML = '';
+  [1,2,3,4].forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'col-btn' + (c === selectedCols ? ' selected' : '');
+    btn.disabled = !valid.includes(c);
+    btn.textContent = c === 1 ? '1 欄' : `${c} 欄`;
+    btn.onclick = () => {
+      selectedCols = c;
+      renderColOptions();
+      renderUrlGrid();
+      renderPreview();
+    };
+    colOptions.appendChild(btn);
+  });
+  const rows = selectedCols ? logoCount / selectedCols : '?';
+  colNote.innerHTML = selectedCols
+    ? `每欄顯示 <b>${rows}</b> 個，輪播一圈約 <b>${((STAY + MOVE) * rows).toFixed(1)}s</b>`
+    : '請選擇欄數';
+}
+
+// ── Step 3: URL 輸入 ──
+let urlValues = Array(MAX_COUNT).fill('');
+
+function renderUrlGrid() {
+  urlGrid.innerHTML = '';
+  const cols = selectedCols || 1;
+  urlGrid.style.gridTemplateColumns = `repeat(${Math.min(cols, 2)}, 1fr)`;
+  for (let i = 0; i < logoCount; i++) {
+    const row = document.createElement('div');
+    row.className = 'url-item';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'url-label';
+    lbl.textContent = `Logo ${i+1}`;
+
+    const inp = document.createElement('input');
+    inp.className = 'url-input';
+    inp.type = 'text';
+    inp.placeholder = 'https://example.com/logo.png';
+    inp.value = urlValues[i] || '';
+    inp.addEventListener('input', e => {
+      urlValues[i] = e.target.value.trim();
+      updateThumb(thumb, urlValues[i]);
+      renderPreview();
+    });
+
+    const thumb = document.createElement('div');
+    thumb.className = 'url-thumb';
+    thumb.innerHTML = '<div class="placeholder-dot"></div>';
+    updateThumb(thumb, urlValues[i]);
+
+    row.appendChild(lbl);
+    row.appendChild(inp);
+    row.appendChild(thumb);
+    urlGrid.appendChild(row);
+  }
+}
+
+function updateThumb(thumb, src) {
+  if (!src) {
+    thumb.innerHTML = '<div class="placeholder-dot"></div>';
+    return;
+  }
+  thumb.innerHTML = `<img src="${src}" onerror="this.style.display='none';this.parentNode.innerHTML='<div class=\\'placeholder-dot\\'></div>';" onload="this.style.display='block';">`;
+}
+
+// ── Step 4: 預覽 ──
+function renderPreview() {
+  if (!selectedCols) { previewBanner.innerHTML = '<div style="font-family:monospace;font-size:12px;color:#444;padding:20px;">請先選擇欄數</div>'; return; }
+
+  const cols = selectedCols;
+  const rows = logoCount / cols;
+  const uid = 'prev';
+  const cycle = (STAY + MOVE) * rows;
+  const totalDelay = Math.min(1.2, cycle * 0.3);
+
+  // build style
+  let css = `
+  #previewBanner .lb-banner { display:grid; grid-template-columns:repeat(${cols},1fr); gap:16px; width:100%; max-width:${cols * 160}px; }
+  #previewBanner { --lbh:${H}px; }
+  #previewBanner .lb-vp { height:var(--lbh); overflow:hidden; }
+  #previewBanner .lb-track { display:flex; flex-direction:column; animation:lb-scroll-${uid} ${cycle}s cubic-bezier(0.76,0,0.24,1) infinite; }
+  #previewBanner .lb-item { height:var(--lbh); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  #previewBanner .lb-item img { max-height:32px; max-width:80%; opacity:0.55; transition:opacity .3s; object-fit:contain; }
+  #previewBanner .lb-item:hover img { opacity:1; }
+  ${generateKeyframes(rows, uid).replace(/^ {2}/gm, '')}
+  `;
+
+  // 手機欄數：2的倍數→2欄，其他→1欄
+  const mobileCols = cols % 2 === 0 ? 2 : 1;
+  css += `\n  @media (max-width:600px) { #previewBanner .lb-banner { grid-template-columns:repeat(${mobileCols},1fr); } }`;
+
+  // add delays per column
+  for (let c = 0; c < cols; c++) {
+    const delay = cols > 1 ? (c * totalDelay / (cols - 1)).toFixed(2) : '0';
+    css += `\n  #previewBanner .lb-vp:nth-child(${c+1}) .lb-track { animation-delay:${delay}s; }`;
+  }
+  previewStyle.textContent = css;
+
+  // build html
+  let html = `<div class="lb-banner">`;
+  for (let c = 0; c < cols; c++) {
+    html += `<div class="lb-vp"><div class="lb-track">`;
+    for (let r = 0; r < rows; r++) {
+      const idx = c * rows + r;
+      const src = urlValues[idx] || '';
+      const img = src
+        ? `<img src="${src}" alt="Logo ${idx+1}">`
+        : `<div style="width:32px;height:32px;border-radius:4px;background:#222;"></div>`;
+      html += `<div class="lb-item">${img}</div>`;
+    }
+    // 補位（複製第一個）
+    const firstIdx = c * rows;
+    const firstSrc = urlValues[firstIdx] || '';
+    const firstImg = firstSrc
+      ? `<img src="${firstSrc}" alt="補位">`
+      : `<div style="width:32px;height:32px;border-radius:4px;background:#222;"></div>`;
+    html += `<div class="lb-item">${firstImg}</div>`;
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+  previewBanner.innerHTML = html;
+}
+
+// ── Generate code ──
+genBtn.onclick = () => {
+  if (!selectedCols) { alert('請先選擇欄數'); return; }
+
+  const cols = selectedCols;
+  const rows = logoCount / cols;
+  const cycle = (STAY + MOVE) * rows;
+  const totalDelay = Math.min(1.2, cycle * 0.3);
+
+  // keyframe stops
+  const slotPct = 100 / rows;
+  const stayPct = (STAY / (STAY + MOVE)) * slotPct;
+  let kfLines = [];
+  for (let i = 0; i < rows; i++) {
+    const s = pct(i * slotPct);
+    const e = pct(i * slotPct + stayPct);
+    const ty = i === 0 ? '0' : `calc(-${i} * var(--h))`;
+    kfLines.push(`    ${s}%, ${e}% { transform: translateY(${ty}); }`);
+  }
+  kfLines.push(`    100%              { transform: translateY(calc(-${rows} * var(--h))); }`);
+
+  // 手機欄數：2的倍數→2欄，其他→1欄
+  const mobileCols = cols % 2 === 0 ? 2 : 1;
+
+  // delay rules
+  let delayRules = '';
+  for (let c = 0; c < cols; c++) {
+    const delay = cols > 1 ? (c * totalDelay / (cols - 1)).toFixed(2) : '0.00';
+    delayRules += `  .column-viewport:nth-child(${c+1}) .track { animation-delay: ${delay}s; }\n`;
+  }
+
+  // columns html
+  let colsHTML = '';
+  for (let c = 0; c < cols; c++) {
+    colsHTML += `\n  <!-- 欄 ${c+1} -->\n  <div class="column-viewport">\n    <div class="track">`;
+    for (let r = 0; r < rows; r++) {
+      const idx = c * rows + r;
+      const src = urlValues[idx] || 'logo.png';
+      colsHTML += `\n      <div class="logo-item"><img src="${src}" alt="Logo ${idx+1}"></div>`;
+    }
+    // 補位
+    const firstSrc = urlValues[c * rows] || 'logo.png';
+    colsHTML += `\n      <div class="logo-item"><img src="${firstSrc}" alt="補位"></div>`;
+    colsHTML += `\n    </div>\n  </div>`;
+  }
+
+  const code =
+`<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<style>
+  /*
+   * Logo Banner — ${cols} 欄 × ${rows} 列，共 ${logoCount} 個 Logo
+   * 停留 ${STAY}s，滑動 ${MOVE}s，週期 ${cycle}s
+   */
+  :root {
+    --h: ${H}px;
+    --stay-time: ${STAY}s;
+    --move-time: ${MOVE}s;
+    --total-logos: ${rows};
+    --cycle: ${cycle}s;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .logo-banner {
+    display: grid;
+    grid-template-columns: repeat(${cols}, 1fr);
+    gap: 20px;
+    width: 80%;
+    max-width: ${cols * 200}px;
+    margin: 0 auto;
+  }
+
+  .column-viewport {
+    height: var(--h);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .track {
+    display: flex;
+    flex-direction: column;
+    animation: step-scroll var(--cycle) cubic-bezier(0.76, 0, 0.24, 1) infinite;
+  }
+
+${delayRules}
+  .logo-item {
+    height: var(--h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-item img {
+    max-height: 35px;
+    max-width: 80%;
+    opacity: 0.55;
+    transition: opacity 0.3s;
+    object-fit: contain;
+  }
+
+  .logo-item:hover img {
+    opacity: 1;
+  }
+
+  @keyframes step-scroll {
+${kfLines.join('\n')}
+  }
+
+
+  /* —— RWD: 手機版 (max-width: 600px) —— */
+  @media (max-width: 600px) {
+    .logo-banner {
+      grid-template-columns: repeat(${mobileCols}, 1fr);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="logo-banner">
+${colsHTML}
+
+</div>
+
+</body>
+</html>`;
+
+  outputCode.textContent = code;
+  outputStep.style.display = 'block';
+  outputStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+// ── Copy ──
+copyBtn.onclick = () => {
+  navigator.clipboard.writeText(outputCode.textContent).then(() => {
+    copyBtn.textContent = '已複製 ✓';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = '複製';
+      copyBtn.classList.remove('copied');
+    }, 2000);
+  });
+};
+
+// ── Init ──
+function refresh() {
+  numDisplay.textContent = logoCount;
+  const valid = getValidCols(logoCount);
+  // 如果目前選的欄數不再合法，重設
+  if (selectedCols && !valid.includes(selectedCols)) selectedCols = null;
+  // 如果只有一個合法選項，自動選
+  if (!selectedCols && valid.length === 1) selectedCols = valid[0];
+  numHint.textContent = `可整除的欄數：${valid.join('、')}`;
+  renderColOptions();
+  renderUrlGrid();
+  renderPreview();
+  outputStep.style.display = 'none';
+}
+
+refresh();
+</script>
+</body>
+</html>
